@@ -1,2 +1,2 @@
 # rasProg
-all the midules that will run on raspberry pi side
+all the modules that will run on the raspberry pi side
