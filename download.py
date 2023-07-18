@@ -94,10 +94,9 @@ class Update_Ftp(object):
                        self.append_consol_outer(consolBox_update,passed_text="flashing firmware.... "+server_version_str+"\n")
                        time.sleep(2)
                        self.append_consol_outer(consolBox_update,passed_text="flashing firmware succeeded"+server_version_str+"\n")
-
-
              server_file_found=False
              local_file_found=False
+             self.IS_RUNNING = False
              if(server_connected):
                     myftp.close();
                     server_connected=False
