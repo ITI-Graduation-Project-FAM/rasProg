@@ -10,9 +10,11 @@ import threading
 import time
 import image_rotate
 import download
+import CanModule
+import can
 
 class Toplevel1:
-
+    
     #function and variable for controlling the update thread
     def thread_update_fn(self,Toplevel):
             update_Ftp_var.get_update(consolBox_update=self.txt)
@@ -60,15 +62,8 @@ class Toplevel1:
             else:
                 pass
              
-    def camera_button_fn(self,state):
-        if(state=="Open Camera"):
-            camera_thread_var=threading.Thread(target=self.thread_camera_button_fn,daemon=True)
-            self.btn_camera.configure(text='''camera opened''',background="yellow")
-            camera_thread_var.start()
-        else:
-            self.camera_var.STOP_FLAG=True
-            self.btn_camera.configure(text='''Closing camera''',background="Orange")
-            
+
+
 
     def Diagnose_fn(self,state):
         if(state=="Diagnose"):
@@ -78,9 +73,7 @@ class Toplevel1:
         else:
             pass
 
-    def thread_camera_button_fn(self): 
-        self.camera_var.Lane_module_main()
-    
+
 
     
     def btn_start_algo_fn(self):
@@ -106,6 +99,7 @@ class Toplevel1:
         print(self.battrey_satues)
 #------------------------------------------------------------------
 #add images here for battery
+        self.LabetempValue.configure(text=self.batteryTemp)
         if(self.battrey_satues==70):
 
             Ximg=tk.PhotoImage(file="picture6.png")
@@ -119,19 +113,20 @@ class Toplevel1:
             # Ximg=Ximg.zoom(2)
             XimgLabel=tk.Label(image=Ximg)
             XimgLabel.place(relx=0.2,rely=0.5,anchor=tk.CENTER)
+            
 #------------------------------------------------------------------
 
         time.sleep(0.5)  
-        #loop in the camera thread to check its status and change the gui
-        # if(self.camera_var.Camera_IS_RUNNING==False):
-        #     self.btn_camera.configure(text='''Open Camera''',background="white")
-        # if((self.camera_var.Camera_IS_RUNNING==True) & (self.camera_var.STOP_FLAG==False)):  
-        #    self.btn_camera.configure( text="camera Running.." ,background="yellow");
-        # elif((self.camera_var.Camera_IS_RUNNING==True) & (self.camera_var.STOP_FLAG==True)):
-        #     self.btn_camera.configure(text='''Closing camera''',background="Orange")
-        # print("\n \n \n  loop in Gui thread \n \n \n"+str(camera_thread_var.is_alive())+"\n \n ")  
-        # self.icon_image.angle=self.control_var.curve*70
 
+
+    def CAN_SYNC(self,msg=can.Message):
+        if(True):
+            self.batteryTemp=msg.data[0]
+        self.LabetempValue.configure(text=msg.data[0])
+        print("msg received \n ID:",msg.arbitration_id,"  ","Data:",msg.data)
+        
+        
+        pass
         
 #-------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------
@@ -156,14 +151,9 @@ class Toplevel1:
         
         global update_Ftp_var
         update_Ftp_var=download.Update_Ftp()
-        
 
-        #this thread is for rotating the steering wheel based on the curve(turn degree)
-        # global icon_image
-        # self.icon_image=image_rotate.SimpleApp(root,"picture6.png")
-        # self.icon_image.start_rotate(filenamePara="picture6.png")
-        # icon_image_thread_var=threading.Thread(target=self.icon_image.start_rotate,args=(),daemon=True)
-        # icon_image_thread_var.start()
+        global CANSyncThread_var
+        CanSyncThread_var=threading.Thread(target=self.CAN_SYNC,daemon=True)
 
 
         self.top = top
@@ -174,10 +164,15 @@ class Toplevel1:
         self.btn_updates = tk.Button(self.top)
         self.LabelBox_status = tk.Label(self.top)
         self.Label2 = tk.Label(self.top)
+        self.Labetemp = tk.Label(self.top)
+        self.LabetempValue = tk.Label(self.top)
         self.consolFrame = tk.LabelFrame(self.top)
         self.txt = scrolledtext.ScrolledText(self.top, undo=True)
 
-
+        self.batteryVoltage=0
+        self.batteryCurrent=0
+        self.batteryTemp=0
+        
 
 
         top.geometry("883x348+275+270")
@@ -246,6 +241,15 @@ class Toplevel1:
         self.Label2.configure(compound='left',disabledforeground="#a3a3a3",foreground="#000000",highlightbackground="#d9d9d9")
         self.Label2.configure(highlightcolor="black",text='''State:''')
 
+        self.Labetemp.place(relx=0.35, rely=0.5, height=31, width=35)
+        self.Labetemp.configure(activebackground="#f9f9f9",activeforeground="black",anchor='w',background="#d9d9d9")
+        self.Labetemp.configure(compound='left',disabledforeground="#a3a3a3",foreground="#000000",highlightbackground="#d9d9d9")
+        self.Labetemp.configure(highlightcolor="black",text='''Temp:''')
+        self.LabetempValue.place(relx=0.45, rely=0.5, height=31, width=35)
+        self.LabetempValue.configure(activebackground="#f9f9f9",activeforeground="black",anchor='w',background="#d9d9d9")
+        self.LabetempValue.configure(compound='left',disabledforeground="#a3a3a3",foreground="#000000",highlightbackground="#d9d9d9")
+        self.LabetempValue.configure(highlightcolor="black",text='''0''')
+
 
 
         #self.Text1 = tk.Text(self.top)
@@ -253,9 +257,11 @@ class Toplevel1:
         
 
 
-
-
-        
+#---------------------------------------------------------
+# -------------------delete this part to run on pc----------
+        mycan=CanModule.CANOBJ()
+        mycan.addListener(Callable=self.CAN_SYNC)
+#----------------------------------------------------------------------
         self.txt['font'] = ('consolas', '9')
         self.txt.insert(tk.END,"\n")
         self.txt.insert(tk.END,"\n")
