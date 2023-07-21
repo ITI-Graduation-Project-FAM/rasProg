@@ -94,7 +94,6 @@ class Toplevel1:
         if(update_Ftp_var.IS_RUNNING):
            self.btn_updates.configure( text="Checking.." ,background="yellow",default=tk.DISABLED)
         elif (update_Ftp_var.IS_RUNNING==False):
-           self.btn_updates.configure( text="Checking.." ,background="yellow",default='normal')
            self.btn_updates.configure(text='''Check for update''',background="orange",default=tk.DISABLED)
         print(self.battrey_satues)
 #------------------------------------------------------------------
@@ -241,7 +240,7 @@ class Toplevel1:
         self.Label2.configure(compound='left',disabledforeground="#a3a3a3",foreground="#000000",highlightbackground="#d9d9d9")
         self.Label2.configure(highlightcolor="black",text='''State:''')
 
-        self.Labetemp.place(relx=0.35, rely=0.5, height=31, width=35)
+        self.Labetemp.place(relx=0.45, rely=0.5, height=31, width=35)
         self.Labetemp.configure(activebackground="#f9f9f9",activeforeground="black",anchor='w',background="#d9d9d9")
         self.Labetemp.configure(compound='left',disabledforeground="#a3a3a3",foreground="#000000",highlightbackground="#d9d9d9")
         self.Labetemp.configure(highlightcolor="black",text='''Temp:''')
@@ -258,7 +257,7 @@ class Toplevel1:
 
 
 #---------------------------------------------------------
-# -------------------delete this part to run on pc----------
+# -------------------comment this part to run on pc----------
         mycan=CanModule.CANOBJ()
         mycan.addListener(Callable=self.CAN_SYNC)
 #----------------------------------------------------------------------
