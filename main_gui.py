@@ -69,7 +69,7 @@ class Toplevel1:
         if(state=="Diagnose"):
             self.btn_Diagnose.configure(text='''Diagnosing''',background="yellow",state='disabled')
             self.txt.configure(state='normal')
-            self.txt.insert(tk.END,"Front Camera is not Responding. \n")
+            self.txt.insert(tk.END,"Cooling is not Responding. \n")
         else:
             pass
 
@@ -188,30 +188,13 @@ class Toplevel1:
 
         
         self.btn_info.place(relx=0.781, rely=0.805, height=44, width=77)
-        self.btn_info.configure(activebackground="#ececec")
-        self.btn_info.configure(activeforeground="#000000")
-        self.btn_info.configure(background="#d9d9d9")
-        self.btn_info.configure(compound='left')
-        self.btn_info.configure(disabledforeground="#a3a3a3")
-        self.btn_info.configure(foreground="#000000")
-        self.btn_info.configure(highlightbackground="#d9d9d9")
-        self.btn_info.configure(highlightcolor="black")
-        self.btn_info.configure(pady="0")
-        self.btn_info.configure(text='''Info''')
+        self.btn_info.configure(background="#d9d9d9",highlightbackground="#d9d9d9",highlightcolor="black",text='''Info''')
         self.btn_info.configure(command=lambda :self.info_fn())
         
 
         self.btn_updates.place(relx=0.578, rely=0.805, height=44, width=137)
-        self.btn_updates.configure(activebackground="#ececec")
-        self.btn_updates.configure(activeforeground="#000000")
-        self.btn_updates.configure(background="#d9d9d9")
-        self.btn_updates.configure(compound='left')
+        self.btn_updates.configure(text='''Check for update''',background="#d9d9d9",activebackground="#ececec",activeforeground="#000000")
         self.btn_updates.configure(disabledforeground="#a3a3a3")
-        self.btn_updates.configure(foreground="#000000")
-        self.btn_updates.configure(highlightbackground="#d9d9d9")
-        self.btn_updates.configure(highlightcolor="black")
-        self.btn_updates.configure(pady="0")
-        self.btn_updates.configure(text='''Check for update''')
         #self.btn_updates.configure(command=update_button_fn)
         self.btn_updates.configure(command=lambda :self.update_button_fn(self.btn_updates['text'] ))
         
@@ -219,14 +202,9 @@ class Toplevel1:
 
         self.btn_Diagnose.place(relx=0.17, rely=0.805, height=44, width=147)
         self.btn_Diagnose.configure(activebackground="#ececec")
-        self.btn_Diagnose.configure(activeforeground="#000000")
         self.btn_Diagnose.configure(background="#d9d9d9")
         self.btn_Diagnose.configure(compound='left')
         self.btn_Diagnose.configure(disabledforeground="#a3a3a3")
-        self.btn_Diagnose.configure(foreground="#000000")
-        self.btn_Diagnose.configure(highlightbackground="#d9d9d9")
-        self.btn_Diagnose.configure(highlightcolor="black")
-        self.btn_Diagnose.configure(pady="0")
         self.btn_Diagnose.configure(text='''Diagnose''')
         self.btn_Diagnose.configure(command=lambda : self.Diagnose_fn(state=self.btn_Diagnose["text"]) )
 
@@ -258,8 +236,8 @@ class Toplevel1:
 
 #---------------------------------------------------------
 # -------------------comment this part to run on pc----------
-        mycan=CanModule.CANOBJ()
-        mycan.addListener(Callable=self.CAN_SYNC)
+        # mycan=CanModule.CANOBJ()
+        # mycan.addListener(Callable=self.CAN_SYNC)
 #----------------------------------------------------------------------
         self.txt['font'] = ('consolas', '9')
         self.txt.insert(tk.END,"\n")
