@@ -236,8 +236,8 @@ class Toplevel1:
 
 #---------------------------------------------------------
 # -------------------comment this part to run on pc----------
-        # mycan=CanModule.CANOBJ()
-        # mycan.addListener(Callable=self.CAN_SYNC)
+        mycan=CanModule.CANOBJ()
+        mycan.addListener(Callable=self.CAN_SYNC)
 #----------------------------------------------------------------------
         self.txt['font'] = ('consolas', '9')
         self.txt.insert(tk.END,"\n")

@@ -1,9 +1,10 @@
 import can
-
+import time
 #make this file as class and call it in main file
 class CANOBJ(object):
     ST1HEXsendID=0x100
     Notifier=None
+    answer=0
     def __init__(self,filters=None):
         if filters is None:
             filters = [
@@ -28,8 +29,9 @@ class CANOBJ(object):
                 {"can_id": 0x28  , "can_mask": 0x7ff  , "extended": False},#for signal from st2 ready to receive hex file
                 {"can_id": 0x29  , "can_mask": 0x7ff  , "extended": False},#for signal from st1 ready to receive next line
                 {"can_id": 0x30  , "can_mask": 0x7ff  , "extended": False},#for signal from st2 ready to receive next line
+                {"can_id": 0x31  , "can_mask": 0x7ff  , "extended": False},##for end of hex file transmission to st1
             ]
-        self.bus = can.ThreadSafeBus(interface='socketcan', channel='can0', bitrate=250000)
+        self.bus = can.ThreadSafeBus(interface='socketcan', channel='can0', bitrate=400000)
         
 
     def addListener(self,Callable):
@@ -47,7 +49,7 @@ class CANOBJ(object):
         )
         try:
             self.bus.send(msg)
-            print(f"Message sent on {self.bus.channel_info}")
+            # print(f"Message sent on {self.bus.channel_info}")
         except can.CanError:
             print("Message NOT sent")
     
@@ -55,38 +57,80 @@ class CANOBJ(object):
         for msg in self.bus:
             print("ID",hex(msg.arbitration_id),"Data",msg.data)
     
-    def send_hexFile(self):
-        with open('file.hex', 'r') as file:
-            hex_lines = file.readlines()
+
             
-            # Send the hex file in batches of 1 lines
-            for i in range(0, len(hex_lines), 1):
-                batch_lines = hex_lines[i:i+1]
-            
-                # Create the data to send
-                data = []
-                for line in batch_lines:
-                    linedata = ''
-                while True:      
-                    char = file.read(1)  # Read one character at a time
-                    linedata += char
-                    if (char == '' or char == '\n'):
+    def send_hexFileCAN(self,passedfile='file.hex'):
+        global answer
+        # global bus
+        self.addListener(busp=self.bus,Callable= self.handleincoming)
+        len=0
+        dataarray=""
+        filelocation=0
+        recordlocation=0
+        currentrecordAdd=""
+        currentrecordType=""
+        isEndOfFile=False
+        self.send(0x16,0x1,False)
+        with open(passedfile, 'r') as file:
+            wholevalue = file.read()
+            for value in wholevalue:
+                answer=0
+                if(value==':'):
+                    continue
+                filelocation+=1
+                len+=1
+                dataarray+=value
+                recordlocation+=1
+                # store the current record address
+                if(recordlocation>=3 and recordlocation<=6):
+                    currentrecordAdd+=value
+                # check if the record is end of line
+
+                if(recordlocation>=7 and recordlocation<=8):
+                    currentrecordType+=value
+                
+                #check if the record is end of file
+                if(currentrecordType=="01"):
+                    isEndOfFile=True
+                if(value =='\n'):
+                    # print((bytes.fromhex(dataarray)).hex(),end="")
+                    self.send(0x23,(bytes.fromhex(dataarray)),False)
+                    self.waitingforanswer(printdelay=0.00001)
+                    print("Record  ",currentrecordAdd,"sent")
+                    self.send(0x26,0x1,False)
+                    self.waitingforanswer(printdelay=0.00001)
+                    if(isEndOfFile):
+                        print("End of file")
+                        print("Firmware sent successfully")
                         break
-                 # Convert each line to bytes and append to the data list
-                line_data = bytes.fromhex(linedata)
-                data.extend(line_data)
-            
-                # Send the data using the CAN module
+                    dataarray=""
+                    len=0
+                    recordlocation=0
+                    currentrecordType=""
+                    currentrecordAdd=""
+                elif(len==16):
+                    # print((bytes.fromhex(dataarray)).hex(),end="")
+                    self.send(0x23,(bytes.fromhex(dataarray)),False)
+                    dataarray=""
+                    len=0
+                    self.waitingforanswer(printdelay=0.00001)
+                
 
-                self.send(self.ST1HEXsendID, data, is_Extended_id=False)
-            
-                # Wait for "OK" response before sending the next batch
-                response = None
-                while response is None or response.data != b'OK':
-                    response = self.receive()
-            
-                print("Received OK response")
-            
-            
-
-
+    def waitingforanswer(self,printdelay=0.01):
+        global answer
+        while(answer==0):
+            time.sleep(printdelay)
+            continue
+        answer=0
+        return 1
+    
+    def handleincoming(var=can.Message):
+        global answer
+        # print("ID ", var.arbitration_id,"DATA",var.data)
+        # send(bus,0x124,0x1,False)
+        if(var.arbitration_id==0x23):
+            pass
+        elif(var.arbitration_id==0x29):
+            # print("answer received")
+            # wriefile('\n',False)
+            answer=1

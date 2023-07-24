@@ -71,6 +71,7 @@ def send_hexFileCAN(passedfile='file.hex'):
     recordlocation=0
     currentrecordAdd=""
     currentrecordType=""
+    isEndOfFile=False
     sendonly.send1(0x16,0x1,False)
     with open(passedfile, 'r') as file:
         wholevalue = file.read()
@@ -83,24 +84,27 @@ def send_hexFileCAN(passedfile='file.hex'):
             dataarray+=value
             recordlocation+=1
             # store the current record address
-            if(recordlocation>=4 or recordlocation<=7):
+            if(recordlocation>=3 and recordlocation<=6):
                 currentrecordAdd+=value
             # check if the record is end of line
 
-            if(recordlocation>=8 or recordlocation<=9):
+            if(recordlocation>=7 and recordlocation<=8):
                 currentrecordType+=value
             
             #check if the record is end of file
             if(currentrecordType=="01"):
-                print("end of file")
-             #   break
+                isEndOfFile=True
             if(value =='\n'):
                 # print((bytes.fromhex(dataarray)).hex(),end="")
                 sendonly.send1(0x23,(bytes.fromhex(dataarray)),False)
-                waitingforanswer(printdelay=0.001)
+                waitingforanswer(printdelay=0.00001)
                 print("Record  ",currentrecordAdd,"sent")
                 sendonly.send1(0x26,0x1,False)
-                waitingforanswer(printdelay=0.001)
+                waitingforanswer(printdelay=0.00001)
+                if(isEndOfFile):
+                    print("End of file")
+                    print("Firmware sent successfully")
+                    break
                 dataarray=""
                 len=0
                 recordlocation=0
@@ -111,21 +115,10 @@ def send_hexFileCAN(passedfile='file.hex'):
                 sendonly.send1(0x23,(bytes.fromhex(dataarray)),False)
                 dataarray=""
                 len=0
-                waitingforanswer(printdelay=0.001)
+                waitingforanswer(printdelay=0.00001)
             
 
 
-def send(busv,arbitration_id,data,is_Extended_id=False):
-        msg = can.Message(
-            arbitration_id=arbitration_id,
-            data=data,
-            is_extended_id=is_Extended_id,
-        )
-        try:
-            busv.send(msg)
-            print(f"Message sent on {busv.channel_info}")
-        except can.CanError:
-            print("Message NOT sent") 
 
 
 def addListener(busp,Callable):
@@ -133,9 +126,9 @@ def addListener(busp,Callable):
 def waitingforanswer(printdelay=0.01):
     global answer
     while(answer==0):
-        print("answer is",answer)
+        # print("answer is",answer)
         # time.sleep(0.01)
-        print("waiting for answer")
+        # print("waiting for answer")
         time.sleep(printdelay)
         continue
     answer=0
@@ -143,7 +136,9 @@ def waitingforanswer(printdelay=0.01):
     # print("answer received")
     return 1
 
-send_hexFileCAN('ADC_LM35.hex')
+
+send_hexFileCAN('stmf103_blinkDebugPins.hex')
+#send_hexFileCAN('ADC_LM35.hex')
 #send_hexFileCAN('CAN_New.hex')
 
 
