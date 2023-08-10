@@ -22,21 +22,24 @@ class Toplevel1:
     def info_fn(self):
             # Toplevel object which will
              # be treated as a new window
+         def closeinfoWindow(self,newWindow):
+                newWindow.destroy()
+                self.btn_info.configure(state='normal')
+         
          self.btn_info.configure(state='disabled')
          newWindow = Toplevel(self.top)
  
          # sets the title of the
          # Toplevel widget
          newWindow.title("Info")
- 
+
          # sets the geometry of toplevel
          newWindow.geometry("200x200")
          self.stop_button = tk.Button(newWindow)
          
- 
          # A Label widget to show in toplevel
          Label(newWindow,
-         text ="Model:64V \nFirmware version:V1.1 \nSystem Status:Good \nCreator: Mansoura Universitey \nID:VEH982496354").pack()
+         text ="Model:64V \nFirmware version:V1.1 \nSystem Status:Good \nCreator: FAM_TEAM  \nID:VEH982496354").pack()
          #self.stop_button.pack()
          self.stop_button.configure(activebackground="#ececec")
          self.stop_button.configure(activeforeground="#000000")
@@ -49,10 +52,12 @@ class Toplevel1:
          self.stop_button.configure(pady="0")
          self.stop_button.configure(text='''Close''')
          self.stop_button.place(relx=0.306, rely=0.7, height=30, width=70)
+         #make the button close the window
+         self.stop_button.configure(command=lambda :closeinfoWindow(self,newWindow=newWindow))
+        
 
         #update button function
     def update_button_fn(self,state):
-            self.battrey_satues=60
             self.consolFrame.configure(text=self.consolFrame["text"]+" \n")
             if (state=="Check for update"):
                  self.btn_updates.configure(text='''Checking....''',background="yellow")
@@ -63,6 +68,16 @@ class Toplevel1:
                 pass
              
 
+
+    def btn_shutdown_fn(self):
+        # get the current firmware version number from the st1 and st2
+        self.mycan.send(0x10,"",False)
+        self.mycan.send(0x15,"",False)
+        # check if the version number is the same as the latest version number in the current files ,if not update
+        # send the stop app signal to st1
+        
+        self.mycan.send(0x33,"",False)
+        pass
 
 
     def Diagnose_fn(self,state):
@@ -91,6 +106,7 @@ class Toplevel1:
     def gui_update_events(self):
        global update_Ftp_var
        while(True):
+        
         if(update_Ftp_var.IS_RUNNING):
            self.btn_updates.configure( text="Checking.." ,background="yellow",default=tk.DISABLED)
         elif (update_Ftp_var.IS_RUNNING==False):
@@ -99,33 +115,95 @@ class Toplevel1:
 #------------------------------------------------------------------
 #add images here for battery
         self.LabetempValue.configure(text=self.batteryTemp)
-        if(self.battrey_satues==70):
-
-            Ximg=tk.PhotoImage(file="picture6.png")
-            XimgLabel=tk.Label(image=Ximg)
-            XimgLabel.place(relx=0.2,rely=0.5,anchor=tk.CENTER)
-
-        elif(self.battrey_satues==60):
-
-            Ximg=tk.PhotoImage(file="picture3.png")
-            # Ximg=Ximg.subsample(2)
-            # Ximg=Ximg.zoom(2)
-            XimgLabel=tk.Label(image=Ximg)
-            XimgLabel.place(relx=0.2,rely=0.5,anchor=tk.CENTER)
-            
+        if(self.batteryTemp<=20):
+            Ximg=tk.PhotoImage(file="battery20.png")
+        elif(self.batteryTemp<=40 and self.batteryTemp>20):
+            Ximg=tk.PhotoImage(file="battery40.png")
+        elif(self.batteryTemp<=60 and self.batteryTemp>40):
+            Ximg=tk.PhotoImage(file="battery60.png")
+        elif(self.batteryTemp<=80 and self.batteryTemp>60):
+            Ximg=tk.PhotoImage(file="battery80.png")
+        elif(self.batteryTemp<=100 and self.batteryTemp>80):
+            Ximg=tk.PhotoImage(file="battery100.png")
+        Ximg=Ximg.subsample(3)
+        # Ximg=Ximg.zoom(2)
+        XimgLabel=tk.Label(image=Ximg)
+        XimgLabel.configure(background="#d9d9d9")
+        XimgLabel.place(relx=0.2,rely=0.5,anchor=tk.CENTER)
 #------------------------------------------------------------------
 
         time.sleep(0.5)  
 
 
     def CAN_SYNC(self,msg=can.Message):
-        if(True):
-            self.batteryTemp=msg.data[0]
-        self.LabetempValue.configure(text=msg.data[0])
         print("msg received \n ID:",msg.arbitration_id,"  ","Data:",msg.data)
+        #temp value messege
+        if(msg.arbitration_id==0x11):
+            self.batteryTemp=msg.data[0]
+            self.LabetempValue.configure(text=msg.data[0])  
+
+        #st1 version number
+        elif(msg.arbitration_id==0x10):
+            self.st1Version=msg.data[0]
+
+        #st1 version number
+        elif(msg.arbitration_id==0x15):
+            self.st2Version=msg.data[0]
+
+        #st1 battery voltage
+        elif(msg.arbitration_id==0x13):
+            self.batteryVoltage=msg.data[0]
+        
+        #st1 battery current
+        elif(msg.arbitration_id==0x12):
+            self.batteryCurrent=msg.data[0]
+        
+        #st1 pwm value
+        elif(msg.arbitration_id==0x14):
+            self.PWMValue=msg.data[0]
+        
+        #st1 start signal received ,send the required state
+        elif(msg.arbitration_id==0x19):
+            # assign the current state localy
+            self.mycan.ST1currentstate=2
+            # check the requested state and send the required state
+            # st must be in state 2 to send the hex file
+            if(self.mycan.st1requestedstate==3 and self.mycan.ST1currentstate==2):
+                self.mycan.send(0x16,"",False)
+                # if no update is needed send the start signal
+            elif(self.mycan.st1requestedstate==1):
+                self.mycan.send(0x22,"",False)
+        
+        #st2 start signal received ,send the required state
+        elif(msg.arbitration_id==0x20):
+            # assign the current state localy
+            self.mycan.ST2currentstate=2
+            # check the requested state and send the required state
+            # st must be in state 2 to send the hex file
+            if(self.mycan.st2requestedstate==3 and self.mycan.ST2currentstate==2):
+                self.mycan.send(0x17,"",False)
+                # if no update is needed send the start signal
+            elif(self.mycan.st2requestedstate==1):
+                self.mycan.send(0x21,"",False)
+        
+            # st1 firmware version number received
+        elif(msg.arbitration_id==0x15):
+            self.st1Version=msg.data[0]
+
+            # st2 firmware version number received
+        elif(msg.arbitration_id==0x10):
+            self.st2Version=msg.data[0]
+
+
+        
+            
+
         
         
-        pass
+
+
+        
+        
         
 #-------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------
@@ -140,16 +218,18 @@ class Toplevel1:
 
 
         
-        self.battrey_satues=70
+        self.battrey_satues=20
+        
         global update_thread_var
         update_thread_var=threading.Thread(target=self.thread_update_fn,args=(1,),daemon=True)
 
- 
+
         global gui_thread_var
         gui_thread_var=threading.Thread(target=self.gui_update_events,daemon=True)
         
         global update_Ftp_var
         update_Ftp_var=download.Update_Ftp()
+
 
         global CANSyncThread_var
         CanSyncThread_var=threading.Thread(target=self.CAN_SYNC,daemon=True)
@@ -166,11 +246,19 @@ class Toplevel1:
         self.Labetemp = tk.Label(self.top)
         self.LabetempValue = tk.Label(self.top)
         self.consolFrame = tk.LabelFrame(self.top)
+        self.LabeCurrent = tk.Label(self.top)
+        self.LabeCurrentValue = tk.Label(self.top)
+        self.LabeVoltage = tk.Label(self.top)
+        self.LabeVoltageValue = tk.Label(self.top)
         self.txt = scrolledtext.ScrolledText(self.top, undo=True)
+        self.btnShutdown=tk.Button()
+        self.st1Version=1.0
+        self.st2Version=1.0
 
-        self.batteryVoltage=0
+
+        self.batteryVoltage=20
         self.batteryCurrent=0
-        self.batteryTemp=0
+        self.batteryTemp=50
         
 
 
@@ -199,7 +287,7 @@ class Toplevel1:
         self.btn_updates.configure(command=lambda :self.update_button_fn(self.btn_updates['text'] ))
         
 
-
+    #configure the Diagnose button
         self.btn_Diagnose.place(relx=0.17, rely=0.805, height=44, width=147)
         self.btn_Diagnose.configure(activebackground="#ececec")
         self.btn_Diagnose.configure(background="#d9d9d9")
@@ -207,6 +295,10 @@ class Toplevel1:
         self.btn_Diagnose.configure(disabledforeground="#a3a3a3")
         self.btn_Diagnose.configure(text='''Diagnose''')
         self.btn_Diagnose.configure(command=lambda : self.Diagnose_fn(state=self.btn_Diagnose["text"]) )
+
+        #configure the start button
+        self.btnShutdown.configure(activebackground="#ececec",background="#d9d9d9",text="Shutdown",command=lambda :self.top.destroy())
+        self.btnShutdown.place(relx=0.4, rely=0.805, height=44, width=77)
 
         self.LabelBox_status.place(relx=0.26, rely=0.086, height=31, width=544)
         self.LabelBox_status.configure(activebackground="#ffffff")
@@ -218,14 +310,38 @@ class Toplevel1:
         self.Label2.configure(compound='left',disabledforeground="#a3a3a3",foreground="#000000",highlightbackground="#d9d9d9")
         self.Label2.configure(highlightcolor="black",text='''State:''')
 
-        self.Labetemp.place(relx=0.45, rely=0.5, height=31, width=35)
+        #configure temp label and value
         self.Labetemp.configure(activebackground="#f9f9f9",activeforeground="black",anchor='w',background="#d9d9d9")
         self.Labetemp.configure(compound='left',disabledforeground="#a3a3a3",foreground="#000000",highlightbackground="#d9d9d9")
-        self.Labetemp.configure(highlightcolor="black",text='''Temp:''')
-        self.LabetempValue.place(relx=0.45, rely=0.5, height=31, width=35)
+        self.Labetemp.configure(highlightcolor="black",text="Temp:")
+        self.Labetemp.place(relx=0.30, rely=0.25, height=31, width=100)
         self.LabetempValue.configure(activebackground="#f9f9f9",activeforeground="black",anchor='w',background="#d9d9d9")
         self.LabetempValue.configure(compound='left',disabledforeground="#a3a3a3",foreground="#000000",highlightbackground="#d9d9d9")
-        self.LabetempValue.configure(highlightcolor="black",text='''0''')
+        self.LabetempValue.configure(highlightcolor="black",text=str(self.batteryTemp))
+        self.LabetempValue.place(relx=0.345, rely=0.25, height=31, width=35)
+
+        #configure current label and value
+        self.LabeCurrent.configure(activebackground="#f9f9f9",activeforeground="black",anchor='w',background="#d9d9d9")
+        self.LabeCurrent.configure(compound='left',disabledforeground="#a3a3a3",foreground="#000000",highlightbackground="#d9d9d9")
+        self.LabeCurrent.configure(highlightcolor="black",text="Current:")
+        self.LabeCurrent.place(relx=0.30, rely=0.35, height=31, width=110)
+        self.LabeCurrentValue.configure(activebackground="#f9f9f9",activeforeground="black",anchor='w',background="#d9d9d9")
+        self.LabeCurrentValue.configure(compound='left',disabledforeground="#a3a3a3",foreground="#000000",highlightbackground="#d9d9d9")
+        self.LabeCurrentValue.configure(highlightcolor="black",text=str(self.batteryCurrent))
+        self.LabeCurrentValue.place(relx=0.352, rely=0.35, height=31, width=35)
+
+
+        #configure voltage label and value but with bigger font
+        self.LabeVoltage.configure(activebackground="#f9f9f9",activeforeground="black",anchor='w',background="#d9d9d9")
+        self.LabeVoltage.configure(compound='left',disabledforeground="#a3a3a3",foreground="#000000",highlightbackground="#d9d9d9")
+        self.LabeVoltage.configure(highlightcolor="black",text="Voltage:")
+        self.LabeVoltage.place(relx=0.30, rely=0.45, height=31, width=110)
+        self.LabeVoltageValue.configure(activebackground="#f9f9f9",activeforeground="black",anchor='w',background="#d9d9d9")
+        self.LabeVoltageValue.configure(compound='left',disabledforeground="#a3a3a3",foreground="#000000",highlightbackground="#d9d9d9")
+        self.LabeVoltageValue.configure(highlightcolor="black",text=str(self.batteryVoltage))
+        self.LabeVoltageValue.place(relx=0.355, rely=0.45, height=31, width=35)
+
+        
 
 
 
@@ -236,8 +352,9 @@ class Toplevel1:
 
 #---------------------------------------------------------
 # -------------------comment this part to run on pc----------
-        mycan=CanModule.CANOBJ()
-        mycan.addListener(Callable=self.CAN_SYNC)
+        self.mycan=CanModule.CANOBJ()
+        self.mycan.addListener(Callable=self.CAN_SYNC)
+        
 #----------------------------------------------------------------------
         self.txt['font'] = ('consolas', '9')
         self.txt.insert(tk.END,"\n")

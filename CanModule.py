@@ -5,22 +5,30 @@ class CANOBJ(object):
     ST1HEXsendID=0x100
     Notifier=None
     answer=0
+    # zero state indcates that the app is not running
+    # one state indcates that the app is running in ST opreating mode
+    # two state indcates that the app is running in ST bootloader mode
+    # three state indcates that the app is running in ST bootloader mode and the hex file is being sent
+    ST1currentstate=0
+    ST2currentstate=0
+    st1requestedstate=1
+    st2requestedstate=1
     def __init__(self,filters=None):
         if filters is None:
             filters = [
                 {"can_id": 0x10  , "can_mask": 0x7ff  , "extended": False},#for firmware version number from ST1
-                {"can_id": 0x11  , "can_mask": 0x7ff  , "extended": False},#for Temp reading from st1
-                {"can_id": 0x12  , "can_mask": 0x7ff  , "extended": False},#for current reading from ST1
-                {"can_id": 0x13  , "can_mask": 0x7ff  , "extended": False},#for Voltage reading from ST1
+                {"can_id": 0x11  , "can_mask": 0x7ff  , "extended": False},#for Temp reading from st1  to raspberry
+                {"can_id": 0x12  , "can_mask": 0x7ff  , "extended": False},#for current reading from ST1 to raspberry
+                {"can_id": 0x13  , "can_mask": 0x7ff  , "extended": False},#for Voltage reading from ST1 to raspberry
                 {"can_id": 0x14  , "can_mask": 0x7ff  , "extended": False},#for PWM reading from ST2
-                {"can_id": 0x15  , "can_mask": 0x7ff  , "extended": False},#for firmware version number from ST1
+                {"can_id": 0x15  , "can_mask": 0x7ff  , "extended": False},#for firmware version number from ST2 to raspberry
                 {"can_id": 0x16  , "can_mask": 0x7ff  , "extended": False},#for Start Sending Firmware Hex to ST1 from rasp
                 {"can_id": 0x17  , "can_mask": 0x7ff  , "extended": False},#for Start Sending Firmware Hex to ST2 from rasp
                 {"can_id": 0x18  , "can_mask": 0x7ff  , "extended": False},#for Sending PWM Value to ST2 from rasp
-                {"can_id": 0x19  , "can_mask": 0x7ff  , "extended": False},#for start signal from ST1
-                {"can_id": 0x20  , "can_mask": 0x7ff  , "extended": False},#for start signal from ST2
-                {"can_id": 0x21  , "can_mask": 0x7ff  , "extended": False},#for start app signal to ST2
-                {"can_id": 0x22  , "can_mask": 0x7ff  , "extended": False},#for start app signal to ST1
+                {"can_id": 0x19  , "can_mask": 0x7ff  , "extended": False},#for start signal from ST1 to raspberry
+                {"can_id": 0x20  , "can_mask": 0x7ff  , "extended": False},#for start signal from ST2 to raspberry
+                {"can_id": 0x21  , "can_mask": 0x7ff  , "extended": False},#for start app signal to ST2 from raspberry
+                {"can_id": 0x22  , "can_mask": 0x7ff  , "extended": False},#for start app signal to ST1 from raspberry
                 {"can_id": 0x23  , "can_mask": 0x7ff  , "extended": False},#for hex file record to st1
                 {"can_id": 0x24  , "can_mask": 0x7ff  , "extended": False},#for hex file record to st2
                 {"can_id": 0x25  , "can_mask": 0x7ff  , "extended": False},#for hex file newline to st2
@@ -30,6 +38,14 @@ class CANOBJ(object):
                 {"can_id": 0x29  , "can_mask": 0x7ff  , "extended": False},#for signal from st1 ready to receive next line
                 {"can_id": 0x30  , "can_mask": 0x7ff  , "extended": False},#for signal from st2 ready to receive next line
                 {"can_id": 0x31  , "can_mask": 0x7ff  , "extended": False},##for end of hex file transmission to st1
+                {"can_id": 0x32  , "can_mask": 0x7ff  , "extended": False},#for end of hex file transmission to st2
+                {"can_id": 0x33  , "can_mask": 0x7ff  , "extended": False},#for signal from raspberry to st1 to stop app to st1 and start bootloader
+                {"can_id": 0x34  , "can_mask": 0x7ff  , "extended": False},#for signal from raspberry to st2 to stop app to st2 and start bootloader
+                {"can_id": 0x35  , "can_mask": 0x7ff  , "extended": False},#for signal from raspberry to st1 to start app to st1
+                {"can_id": 0x36  , "can_mask": 0x7ff  , "extended": False},#for signal from raspberry to st2 to start app to st2
+                {"can_id": 0x37  , "can_mask": 0x7ff  , "extended": False},#for Temp reading from st1  to st2
+                {"can_id": 0x38  , "can_mask": 0x7ff  , "extended": False},#for current  reading from ST1 to ST2
+                {"can_id": 0x39  , "can_mask": 0x7ff  , "extended": False},#for Voltage reading from ST1 to ST2
             ]
         self.bus = can.ThreadSafeBus(interface='socketcan', channel='can0', bitrate=400000)
         
@@ -37,8 +53,8 @@ class CANOBJ(object):
     def addListener(self,Callable):
         self.Notifier=can.Notifier(bus=self.bus,listeners=[Callable])
 
-    def stopLiseners(self):
-        self.Notifier.stop()
+    def stopLiseners(self,Callable):
+        self.Notifier.remove_listener([Callable])
            
 
     def send(self,arbitration_id,data,is_Extended_id=False):
@@ -102,7 +118,8 @@ class CANOBJ(object):
                     if(isEndOfFile):
                         print("End of file")
                         print("Firmware sent successfully")
-                        break
+                        self.stopLiseners(Callable= self.handleincoming)
+                        return 0
                     dataarray=""
                     len=0
                     recordlocation=0
@@ -113,16 +130,29 @@ class CANOBJ(object):
                     self.send(0x23,(bytes.fromhex(dataarray)),False)
                     dataarray=""
                     len=0
-                    self.waitingforanswer(printdelay=0.00001)
+                    answerstate=self.waitingforanswer(printdelay=0.00001)
+                    if(answerstate==1):
+                        print("Error in sending hex file")
+                        self.stopLiseners(Callable= self.handleincoming)
+                        return 1
+                    else:
+                        continue
                 
 
     def waitingforanswer(self,printdelay=0.01):
         global answer
-        while(answer==0):
-            time.sleep(printdelay)
-            continue
-        answer=0
+        # wait for answer from st1 for 5 seconds
+        for i in range(500000):
+            if(answer==0):
+                time.sleep(printdelay)
+                continue
+            elif(answer==1):
+                answer=0
+                return 0
+        print("No answer received")
         return 1
+                
+                
     
     def handleincoming(var=can.Message):
         global answer

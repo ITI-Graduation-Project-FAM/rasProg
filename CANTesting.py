@@ -137,8 +137,8 @@ def waitingforanswer(printdelay=0.01):
     return 1
 
 
-send_hexFileCAN('stmf103_blinkDebugPins.hex')
-#send_hexFileCAN('ADC_LM35.hex')
+#send_hexFileCAN('stmf103_blinkDebugPins.hex')
+send_hexFileCAN('ADC_LM35.hex')
 #send_hexFileCAN('CAN_New.hex')
 
 

@@ -18,7 +18,7 @@ class Update_Ftp(object):
            self.IS_RUNNING = False
       
        
-
+      
        
        #CONSOLE box is the text box in GUI that will be updated with the update process
        #this function is used to update the console box from the thread
@@ -57,9 +57,11 @@ class Update_Ftp(object):
                        
                         print("server"+file_names[i])  #list the server existing files
                         #check if the file name is update+version number using regex
-                        if(bool(re.match("update\d+\.\d+.bin",file_names[i]))):
+                        # the file name should be st1update+version number,version number range is 0 to 99
+                        #example st1update10.bin
+                        if(bool(re.match("st1update\d+\d+.bin",file_names[i]))):
                            server_file_name=file_names[i]
-                           server_version_str=server_file_name[6:-4]
+                           server_version_str=server_file_name[9:-4]
                            server_file_found=True
                            print("server file version is "+server_version_str)
                            self.append_consol_outer(consolBox=consolBox_update,passed_text="server file version is "+server_version_str+"\n")
@@ -101,5 +103,6 @@ class Update_Ftp(object):
                     myftp.close();
                     server_connected=False
              self.IS_RUNNING = False
-       
+       def get_current_latest_version_number_st1(self):
+            pass
 
