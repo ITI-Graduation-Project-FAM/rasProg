@@ -75,10 +75,10 @@ class Toplevel1:
         self.mycan.send(0x15,"",False)
         # check if the version number is the same as the latest version number in the current files ,if not update
         # send the stop app signal to st1
+        # self.mycan.send(0x33,"",False)
         
-        self.mycan.send(0x33,"",False)
-        pass
 
+    
 
     def Diagnose_fn(self,state):
         if(state=="Diagnose"):
@@ -111,21 +111,27 @@ class Toplevel1:
            self.btn_updates.configure( text="Checking.." ,background="yellow",default=tk.DISABLED)
         elif (update_Ftp_var.IS_RUNNING==False):
            self.btn_updates.configure(text='''Check for update''',background="orange",default=tk.DISABLED)
-        print(self.battrey_satues)
+        
 #------------------------------------------------------------------
 #add images here for battery
         self.LabetempValue.configure(text=self.batteryTemp)
-        if(self.batteryTemp<=20):
+        if(self.batteryVoltage<=20):
             Ximg=tk.PhotoImage(file="battery20.png")
-        elif(self.batteryTemp<=40 and self.batteryTemp>20):
+            Ximg=Ximg.subsample(3)
+        elif(self.batteryVoltage<=40 and self.batteryVoltage>20):
             Ximg=tk.PhotoImage(file="battery40.png")
-        elif(self.batteryTemp<=60 and self.batteryTemp>40):
+            Ximg=Ximg.subsample(3)
+        elif(self.batteryVoltage<=60 and self.batteryVoltage>40):
             Ximg=tk.PhotoImage(file="battery60.png")
-        elif(self.batteryTemp<=80 and self.batteryTemp>60):
+            Ximg=Ximg.subsample(3)
+        elif(self.batteryVoltage<=80 and self.batteryVoltage>60):
             Ximg=tk.PhotoImage(file="battery80.png")
-        elif(self.batteryTemp<=100 and self.batteryTemp>80):
+            Ximg=Ximg.subsample(3)
+        elif(self.batteryVoltage<=100 and self.batteryVoltage>80):
             Ximg=tk.PhotoImage(file="battery100.png")
-        Ximg=Ximg.subsample(3)
+            Ximg=Ximg.subsample(3)
+
+        
         # Ximg=Ximg.zoom(2)
         XimgLabel=tk.Label(image=Ximg)
         XimgLabel.configure(background="#d9d9d9")
@@ -134,9 +140,23 @@ class Toplevel1:
 
         time.sleep(0.5)  
 
+    def thread_restart_Mcu(self):
+        #restart st and update if firmaewre is not the same
+        if(self.st1Version!=self.st1Version):
+            self.mycan.send(0x33,"",False)
+            # request the st1 to update mode
+            self.mycan.st1requestedstate=3
+            # wait for the st1 to enter bootloader mode
+            while(self.mycan.ST1currentstate!=2):
+                time.sleep(0.1)
+            # send the update file to the st1
+            
+        self.mycan.send(0x33,"",False)
+        time.sleep(1)
+
 
     def CAN_SYNC(self,msg=can.Message):
-        print("msg received \n ID:",msg.arbitration_id,"  ","Data:",msg.data)
+        print("msg received \n ID:",hex(msg.arbitration_id),"  ","Data:",msg.data[0])
         #temp value messege
         if(msg.arbitration_id==0x11):
             self.batteryTemp=msg.data[0]
@@ -153,10 +173,14 @@ class Toplevel1:
         #st1 battery voltage
         elif(msg.arbitration_id==0x13):
             self.batteryVoltage=msg.data[0]
+            self.LabeVoltageValue.configure(text=msg.data[0])
+
+            
         
         #st1 battery current
         elif(msg.arbitration_id==0x12):
             self.batteryCurrent=msg.data[0]
+            self.LabeCurrentValue.configure(text=msg.data[0])
         
         #st1 pwm value
         elif(msg.arbitration_id==0x14):
@@ -168,11 +192,11 @@ class Toplevel1:
             self.mycan.ST1currentstate=2
             # check the requested state and send the required state
             # st must be in state 2 to send the hex file
-            if(self.mycan.st1requestedstate==3 and self.mycan.ST1currentstate==2):
-                self.mycan.send(0x16,"",False)
-                # if no update is needed send the start signal
-            elif(self.mycan.st1requestedstate==1):
-                self.mycan.send(0x22,"",False)
+            # if(self.mycan.st1requestedstate==3 and self.mycan.ST1currentstate==2):
+            #     self.mycan.send(0x16,"",False)
+            #     # if no update is needed send the start signal
+            # elif(self.mycan.st1requestedstate==1):
+            #     self.mycan.send(0x22,"",False)
         
         #st2 start signal received ,send the required state
         elif(msg.arbitration_id==0x20):
@@ -180,11 +204,11 @@ class Toplevel1:
             self.mycan.ST2currentstate=2
             # check the requested state and send the required state
             # st must be in state 2 to send the hex file
-            if(self.mycan.st2requestedstate==3 and self.mycan.ST2currentstate==2):
-                self.mycan.send(0x17,"",False)
-                # if no update is needed send the start signal
-            elif(self.mycan.st2requestedstate==1):
-                self.mycan.send(0x21,"",False)
+            # if(self.mycan.st2requestedstate==3 and self.mycan.ST2currentstate==2):
+            #     self.mycan.send(0x17,"",False)
+            #     # if no update is needed send the start signal
+            # elif(self.mycan.st2requestedstate==1):
+            #     self.mycan.send(0x21,"",False)
         
             # st1 firmware version number received
         elif(msg.arbitration_id==0x15):

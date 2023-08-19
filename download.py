@@ -51,51 +51,76 @@ class Update_Ftp(object):
        
              # myftp.retrlines('LIST');
                #search for the update file in the server
+               #init the server file name and version number
+             server_version_str1=0
+             server_version_str2=0
              if(server_connected):
                    file_names= myftp.nlst()
                    for i in range(0,len(file_names)):
                        
-                        print("server"+file_names[i])  #list the server existing files
+                        # print("server"+file_names[i])  #list the server existing files
                         #check if the file name is update+version number using regex
                         # the file name should be st1update+version number,version number range is 0 to 99
                         #example st1update10.bin
-                        if(bool(re.match("st1update\d+\d+.bin",file_names[i]))):
-                           server_file_name=file_names[i]
-                           server_version_str=server_file_name[9:-4]
+                        
+                        if(bool(re.match("st1update\d+\d+.hex",file_names[i]))):
+                           server_file_name1=file_names[i]
+                           server_version_str1=server_file_name1[9:-4]
                            server_file_found=True
-                           print("server file version is "+server_version_str)
-                           self.append_consol_outer(consolBox=consolBox_update,passed_text="server file version is "+server_version_str+"\n")
-                           break
-       
-               #asssume the update file name Consists of "update"+version number so the program
-               #will compare the local file with the server file to check if there is an update
-       
+                           print("server file version is st1 ",int(server_version_str1))
+                           self.append_consol_outer(consolBox=consolBox_update,passed_text="server file version is st1 "+server_version_str1+"\n")
+                           
+                        #find if there is update for st2
+                        
+                        if(bool(re.match("st2update\d+\d+.hex",file_names[i]))):
+                           server_file_name2=file_names[i]
+                           server_version_str2=server_file_name2[9:-4]
+                           server_file_found=True
+                           print("server file version is st2 ",int(server_version_str2))
+                           self.append_consol_outer(consolBox=consolBox_update,passed_text="server file version is st2 "+server_version_str2+"\n")
+                        
+
        
        
                #find the local version number and store it in local_version_str
              local_files = os.listdir(os.getcwd())
-             local_version_str="0"
+             local_version_str1="0"
+             local_version_str2="0"
+             local_file_found=False
              for i in range(0,len(local_files)):
-                   if(bool(re.match("update\d+\.\d+.binary",local_files[i]))):  
-                       local_version_str=local_files[i][6:-4]
-                       print("local file version is "+local_version_str)
+                   if(bool(re.match("st1update\d+\d+.hex",local_files[i]))):  
+                       local_version_str1=local_files[i][9:-4]
+                       print("local file version is st1. "+local_version_str1)
                        local_file_found=True
-                       break
+                       
+                   elif(bool(re.match("st2update\d+\d+.hex",local_files[i]))):
+                           local_version_str2=local_files[i][9:-4]
+                           print("local file version is st2."+local_version_str2)
+                           local_file_found=True
        
+               #asssume the update file name Consists of "update"+version number so the program
+               #will compare the local file with the server file to check if there is an update
        
                #compare between the server file and the local file
              if(server_file_found):
-                   if((not local_file_found ) or((float(server_version_str)>float(local_version_str)))):
-                    with open(server_file_name, "wb") as file:
+                   if((not local_file_found ) or((int(server_version_str1)>int(local_version_str1))) or (int(server_version_str2)>int(local_version_str2))):
+                    with open(server_file_name1, "wb") as file:
                         # use FTP's RETR command to download the file
-                       myftp.retrbinary(f"RETR {server_file_name}", file.write)
-                       print("Local file updated sucssfuly to "+server_version_str+"\n");
-                       self.append_consol_outer(consolBox_update,passed_text="Local file updated sucssfuly to "+server_version_str+"\n")
-                       self.append_consol_outer(consolBox_update,passed_text="sending reset request ... "+server_version_str+"\n")
-                       time.sleep(0.2)
-                       self.append_consol_outer(consolBox_update,passed_text="flashing firmware.... "+server_version_str+"\n")
-                       time.sleep(2)
-                       self.append_consol_outer(consolBox_update,passed_text="flashing firmware succeeded"+server_version_str+"\n")
+                       myftp.retrbinary(f"RETR {server_file_name1}", file.write)
+                       print("Local file st1 updated sucssfuly to "+server_version_str1+"\n");
+                    with open(server_file_name2, "wb") as file:
+                        # use FTP's RETR command to download the file
+                       myftp.retrbinary(f"RETR {server_file_name2}", file.write)
+                       print("Local file st1 updated sucssfuly to "+server_version_str1+"\n");
+                   self.append_consol_outer(consolBox_update,passed_text="Local file updated sucssfuly \n")
+                  #      self.append_consol_outer(consolBox_update,passed_text="sending reset request ... "+server_version_str1+"\n")
+                  #      time.sleep(0.2)
+                  #      self.append_consol_outer(consolBox_update,passed_text="flashing firmware.... "+server_version_str1+"\n")
+                  #      time.sleep(2)
+                  #      self.append_consol_outer(consolBox_update,passed_text="flashing firmware succeeded"+server_version_str1+"\n")
+             else:
+                        print("no update available")
+                        self.append_consol_outer(consolBox_update,passed_text="no update available\n")
              server_file_found=False
              local_file_found=False
              self.IS_RUNNING = False
