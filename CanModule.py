@@ -16,37 +16,37 @@ class CANOBJ(object):
     def __init__(self,filters=None):
         if filters is None:
             filters = [
-                {"can_id": 0x10  , "can_mask": 0x7ff  , "extended": False},#for firmware version number from ST1
-                {"can_id": 0x11  , "can_mask": 0x7ff  , "extended": False},#for Temp reading from st1  to raspberry
-                {"can_id": 0x12  , "can_mask": 0x7ff  , "extended": False},#for current reading from ST1 to raspberry
-                {"can_id": 0x13  , "can_mask": 0x7ff  , "extended": False},#for Voltage reading from ST1 to raspberry
-                {"can_id": 0x14  , "can_mask": 0x7ff  , "extended": False},#for PWM reading from ST2 to raspberry pi
-                {"can_id": 0x15  , "can_mask": 0x7ff  , "extended": False},#for firmware version number from ST2 to raspberry
-                {"can_id": 0x16  , "can_mask": 0x7ff  , "extended": False},#for Start Sending Firmware Hex to ST1 from rasp
-                {"can_id": 0x17  , "can_mask": 0x7ff  , "extended": False},#for Start Sending Firmware Hex to ST2 from rasp
-                {"can_id": 0x18  , "can_mask": 0x7ff  , "extended": False},#for Sending PWM Value to ST2 from rasp--onhold
-                {"can_id": 0x19  , "can_mask": 0x7ff  , "extended": False},#for start signal from ST1 to raspberry 
-                {"can_id": 0x20  , "can_mask": 0x7ff  , "extended": False},#for start signal from ST2 to raspberry
-                {"can_id": 0x21  , "can_mask": 0x7ff  , "extended": False},#for start app signal to ST2 from raspberry
-                {"can_id": 0x22  , "can_mask": 0x7ff  , "extended": False},#for start app signal to ST1 from raspberry
-                {"can_id": 0x23  , "can_mask": 0x7ff  , "extended": False},#for hex file record to st1
-                {"can_id": 0x24  , "can_mask": 0x7ff  , "extended": False},#for hex file record to st2
-                {"can_id": 0x25  , "can_mask": 0x7ff  , "extended": False},#for hex file newline to st2
-                {"can_id": 0x26  , "can_mask": 0x7ff  , "extended": False},#for hex file newline to st1
-                {"can_id": 0x27  , "can_mask": 0x7ff  , "extended": False},#for signal from st1 ready to receive hex file
-                {"can_id": 0x28  , "can_mask": 0x7ff  , "extended": False},#for signal from st2 ready to receive hex file
-                {"can_id": 0x29  , "can_mask": 0x7ff  , "extended": False},#for signal from st1 ready to receive next line
-                {"can_id": 0x30  , "can_mask": 0x7ff  , "extended": False},#for signal from st2 ready to receive next line
-                {"can_id": 0x31  , "can_mask": 0x7ff  , "extended": False},##for end of hex file transmission to st1
-                {"can_id": 0x32  , "can_mask": 0x7ff  , "extended": False},#for end of hex file transmission to st2
-                {"can_id": 0x33  , "can_mask": 0x7ff  , "extended": False},#for signal from raspberry to st1 to stop app and start bootloader(restart)
-                {"can_id": 0x34  , "can_mask": 0x7ff  , "extended": False},#for signal from raspberry to st2 to stop app and start bootloader(restart)
-                {"can_id": 0x35  , "can_mask": 0x7ff  , "extended": False},#for signal from raspberry to st1 to start app to st1 --onhold
-                {"can_id": 0x36  , "can_mask": 0x7ff  , "extended": False},#for signal from raspberry to st2 to start app to st2 --onhold
-                {"can_id": 0x37  , "can_mask": 0x7ff  , "extended": False},#for Temp reading from st1  to st2
-                {"can_id": 0x38  , "can_mask": 0x7ff  , "extended": False},#for current  reading from ST1 to ST2
-                {"can_id": 0x39  , "can_mask": 0x7ff  , "extended": False},#for Voltage reading from ST1 to ST2
-                {"can_id": 0x40  , "can_mask": 0x7ff  , "extended": False},#for motor speed from st1 to st2
+                {"can_id": 0x10  , "extended": False},#for firmware version number from ST1
+                {"can_id": 0x11  , "extended": False},#for Temp reading from st1  to raspberry
+                {"can_id": 0x12  , "extended": False},#for current reading from ST1 to raspberry
+                {"can_id": 0x13  , "extended": False},#for Voltage reading from ST1 to raspberry
+                {"can_id": 0x14  , "extended": False},#for PWM reading from ST2 to raspberry pi
+                {"can_id": 0x15  , "extended": False},#for firmware version number from ST2 to raspberry
+                {"can_id": 0x16  , "extended": False},#for Start Sending Firmware Hex to ST1 from rasp
+                {"can_id": 0x17  , "extended": False},#for Start Sending Firmware Hex to ST2 from rasp
+                {"can_id": 0x18  , "extended": False},#for Sending PWM Value to ST2 from rasp--onhold
+                {"can_id": 0x19  , "extended": False},#for start signal from ST1 to raspberry 
+                {"can_id": 0x20  , "extended": False},#for start signal from ST2 to raspberry
+                {"can_id": 0x21  , "extended": False},#for start app signal to ST2 from raspberry
+                {"can_id": 0x22  , "extended": False},#for start app signal to ST1 from raspberry
+                {"can_id": 0x23  , "extended": False},#for hex file record to st1
+                {"can_id": 0x24  , "extended": False},#for hex file record to st2
+                {"can_id": 0x25  , "extended": False},#for hex file newline to st2
+                {"can_id": 0x26  , "extended": False},#for hex file newline to st1
+                {"can_id": 0x27  , "extended": False},#for signal from st1 ready to receive hex file
+                {"can_id": 0x28  , "extended": False},#for signal from st2 ready to receive hex file
+                {"can_id": 0x29  , "extended": False},#for signal from st1 ready to receive next line
+                {"can_id": 0x30  , "extended": False},#for signal from st2 ready to receive next line
+                {"can_id": 0x31  , "extended": False},##for end of hex file transmission to st1
+                {"can_id": 0x32  , "extended": False},#for end of hex file transmission to st2
+                {"can_id": 0x33  , "extended": False},#for signal from raspberry to st1 to stop app and start bootloader(restart)
+                {"can_id": 0x34  , "extended": False},#for signal from raspberry to st2 to stop app and start bootloader(restart)
+                {"can_id": 0x35  , "extended": False},#for signal from raspberry to st1 to start app to st1 --onhold
+                {"can_id": 0x36  , "extended": False},#for signal from raspberry to st2 to start app to st2 --onhold
+                {"can_id": 0x37  , "extended": False},#for Temp reading from st1  to st2
+                {"can_id": 0x38  , "extended": False},#for current  reading from ST1 to ST2
+                {"can_id": 0x39  , "extended": False},#for Voltage reading from ST1 to ST2
+                {"can_id": 0x40  , "extended": False},#for motor speed from st1 to st2
 
             ]
         self.bus = can.ThreadSafeBus(interface='socketcan', channel='can0', bitrate=400000)
